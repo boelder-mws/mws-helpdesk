@@ -1,0 +1,7 @@
+# Used by the optional "tls" profile in compose.yaml.
+# Caddy obtains and renews a certificate for this name automatically; the
+# name must resolve to this server and ports 80/443 must be reachable.
+{$HELPDESK_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

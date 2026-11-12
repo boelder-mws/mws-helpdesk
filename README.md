@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IT Helpdesk
 
-## Getting Started
+A self-hosted IT helpdesk: people sign in with your organisation's single
+sign-on, open tickets, and follow them to a fix. Agents work a shared queue
+with reply and fix targets; admins manage teams, categories and targets.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router, React 19, built with Turbopack) · Tailwind
+CSS 4 · shadcn/ui components on Radix UI · Lucide icons · PostgreSQL 17 with
+Drizzle ORM · OpenID Connect sign-in · Docker Compose.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## What's in it
+
+| Area | What it does |
+|---|---|
+| Tickets | Subject, description, category, priority, file attachments (5 × 10 MB). Public replies and agent-only internal notes. Full history of status, priority, assignee, team and category changes. |
+| Roles | **Requester** (own tickets only), **agent** (all tickets, knowledge base, reports), **admin** (plus Settings). |
+| Queue | Views for all open, assigned to me, unassigned, my teams, overdue. Filter by status, priority, category, assignee; search; sort by due date. |
+| Targets (SLA) | First-reply and fix targets per priority, counted in business hours. Tickets show time left, overdue, met or missed. |
+| Email | Sent on new tickets, replies, assignment and status changes. Optional. |
+| Reports | Created vs. resolved per day, by category, by agent, median reply and fix times, share fixed within target. 7/30/90 days. |
+| Knowledge base | Markdown articles with drafts, categories and search. Agents write; everyone reads published articles. |
+
+## Deploy on Debian 13 with Docker
+
+1. **Install Docker Engine and the Compose plugin** — follow
+   <https://docs.docker.com/engine/install/debian/>.
+
+2. **Get the code and create your settings file.**
+
+   ```sh
+   git clone https://github.com/boelder-mws/mws-helpdesk.git
+   cd mws-helpdesk
+   cp .env.example .env
+   ```
+
+3. **Fill in `.env`.** The file explains each setting. The required ones:
+
+   - `APP_URL` — the address people will use, e.g. `https://helpdesk.example.org`
+   - `POSTGRES_PASSWORD` — generate with `openssl rand -hex 24`
+   - `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` — from your identity provider (next section)
+   - `ADMIN_EMAILS` — your own email, so your first sign-in makes you an admin
+
+4. **Start it.**
+
+   ```sh
+   # With built-in HTTPS (Caddy gets a Let's Encrypt certificate for HELPDESK_DOMAIN):
+   docker compose --profile tls up -d --build
+
+   # Or without, if you already run a reverse proxy (app listens on 127.0.0.1:3000):
+   docker compose up -d --build
+   ```
+
+   The database schema is created and upgraded automatically each time the
+   app starts. Check on it with `docker compose ps` and
+   `docker compose logs -f app`.
+
+5. **Sign in**, then open **Settings** to promote your agents, create teams,
+   point categories at teams, and adjust targets and business hours.
+
+### Register the helpdesk with your identity provider
+
+Create a *web application* / *confidential client* with this redirect URI:
+
+```
+<APP_URL>/auth/callback
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Provider | `OIDC_ISSUER` | Notes |
+|---|---|---|
+| Microsoft Entra ID | `https://login.microsoftonline.com/<tenant-id>/v2.0` | App registrations → New registration → Web redirect URI. Create a client secret. |
+| Google Workspace | `https://accounts.google.com` | OAuth client of type "Web application". Set `OIDC_ALLOWED_DOMAINS` to your domain, or make the consent screen "Internal". |
+| Keycloak | `https://<host>/realms/<realm>` | Client with "Client authentication" on. |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Any standards-compliant OpenID Connect provider works (authorization code
+flow with PKCE). To set roles from directory groups instead of by hand, see
+`OIDC_GROUPS_CLAIM` in `.env.example`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Using your own reverse proxy
 
-## Learn More
+Proxy to `127.0.0.1:3000` and pass the original host through, e.g. nginx:
 
-To learn more about Next.js, take a look at the following resources:
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    client_max_body_size 30m;   # ticket attachments
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Day-to-day operations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sh
+# Update to a new version
+git pull && docker compose --profile tls up -d --build
 
-## Deploy on Vercel
+# Back up the database
+docker compose exec -T db pg_dump -U helpdesk helpdesk | gzip > helpdesk-$(date +%F).sql.gz
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Back up attachments
+docker run --rm -v mws-helpdesk_uploads:/data:ro -v "$PWD":/backup debian:13-slim \
+  tar czf /backup/uploads-$(date +%F).tar.gz -C /data .
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Restore the database into an empty stack
+gunzip -c helpdesk-2026-01-01.sql.gz | docker compose exec -T db psql -U helpdesk helpdesk
+```
+
+Data lives in two Docker volumes: `db-data` (PostgreSQL) and `uploads`
+(attachments). `docker compose down` keeps them; `down -v` deletes them.
+The volume name prefix (`mws-helpdesk_`) is the folder name of the checkout.
+
+## How a few things behave
+
+- **First admin.** Anyone in `ADMIN_EMAILS` becomes an admin at sign-in.
+  Everyone else starts as a requester until an admin changes their role.
+- **Opening a ticket for someone.** Agents can enter another person's email
+  on the new-ticket form. If that person has never signed in, a placeholder
+  account is created and linked the first time they do.
+- **Targets.** Due times are set when a ticket is created (and recalculated
+  if its priority changes). Changing targets or hours in Settings affects
+  new tickets only. The clock does not pause while a ticket is waiting on
+  the requester.
+- **Reopening.** A requester's reply to a resolved or waiting ticket puts it
+  back to Open. Closed tickets can't be replied to by the requester.
+- **Email.** With `SMTP_HOST` empty, no email is sent and nothing else
+  changes. New-ticket emails go to the members of the ticket's team, or to
+  all agents and admins if it has no team.
+- **Sign-out** ends the helpdesk session only, not the identity provider's.
+
+## Development
+
+```sh
+npm install
+# PostgreSQL for development:
+docker run -d --name helpdesk-dev-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=helpdesk -p 5432:5432 postgres:17
+# .env.local: DATABASE_URL=postgres://postgres:dev@localhost:5432/helpdesk, APP_URL=http://localhost:3000, OIDC_* …
+npm run dev          # Next.js dev server (Turbopack)
+npm run build        # production build
+npm run lint && npm run typecheck
+npm run db:generate  # after editing src/db/schema.ts: writes a migration to drizzle/
+```
+
+Layout:
+
+```
+src/app/(app)/      signed-in screens: dashboard, tickets, kb, reports, admin
+src/app/auth/       OIDC login, callback, logout
+src/components/ui/  shadcn/ui-style components (Radix primitives + Tailwind)
+src/db/             Drizzle schema, connection, start-up migration
+src/lib/            auth, SLA maths, email, notifications, queries
+drizzle/            SQL migrations
+```
+
+`components.json` is set up, so more shadcn/ui components can be added with
+`npx shadcn@latest add <name>`.
