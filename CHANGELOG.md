@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-13
+
 ### Fixed
 - New ticket form: the "How much is this affecting you?" field no longer runs outside the form. Category and priority are now full width, and long dropdown text is shortened on narrow screens instead of widening the page.
 
@@ -35,6 +37,7 @@ First release.
 - Version number shown in the account menu and in `/api/health`.
 - `APP_BIND` setting so a reverse proxy on another server (such as Nginx Proxy Manager) can reach the app.
 
-[Unreleased]: https://github.com/boelder-mws/mws-helpdesk/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/boelder-mws/mws-helpdesk/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/boelder-mws/mws-helpdesk/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/boelder-mws/mws-helpdesk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/boelder-mws/mws-helpdesk/releases/tag/v0.1.0
