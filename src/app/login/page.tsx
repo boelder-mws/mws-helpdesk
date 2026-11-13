@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { CircleAlert, LogIn, Ticket } from "lucide-react";
+import { CircleAlert, LogIn } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getBranding } from "@/lib/branding";
 import { env } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -26,20 +28,16 @@ export default async function LoginPage({
 }) {
   const sp = await searchParams;
   if (await getCurrentUser()) redirect("/");
+  const brand = await getBranding();
   const error = sp.error ? (ERRORS[sp.error] ?? ERRORS.signin_failed) : null;
   const href = `/auth/login${sp.next ? `?next=${encodeURIComponent(sp.next)}` : ""}`;
 
   return (
     <main className="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <section className="flex flex-col justify-between bg-sidebar px-8 py-10 text-sidebar-foreground sm:px-12 lg:py-14">
-        <div className="flex items-center gap-2.5 font-semibold text-white">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Ticket className="size-4.5" />
-          </span>
-          {env.orgName}
-        </div>
+        <BrandMark {...brand} />
         <div className="my-12 max-w-md">
-          <h1 className="text-3xl leading-tight font-semibold text-white sm:text-4xl">
+          <h1 className="text-3xl leading-tight font-semibold text-sidebar-strong sm:text-4xl">
             Something not working? Tell IT here.
           </h1>
           <p className="mt-4 text-base leading-relaxed">

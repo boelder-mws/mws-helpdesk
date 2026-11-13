@@ -6,7 +6,10 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-13
+
 ### Added
+- Branding: admins can set the name, logo, accent colour and menu/sign-in panel colour under Settings → Branding, with a live light/dark preview. Text colours, hover states and dark mode are worked out from the two colours; accents too light for white button text are refused. The logo (PNG, JPEG, GIF, WebP or SVG, up to 1 MB) is shown in the menu, on the sign-in page and as the browser-tab icon; the name and accent colour are also used in emails. Stored in the `uploads` volume; "Reset to defaults" restores the original look.
 - Admins can permanently delete a ticket from its page, after a confirmation. This removes its replies, internal notes, history and attachment files, and is recorded in the server log.
 
 ### Changed
@@ -29,5 +32,6 @@ First release.
 - Version number shown in the account menu and in `/api/health`.
 - `APP_BIND` setting so a reverse proxy on another server (such as Nginx Proxy Manager) can reach the app.
 
-[Unreleased]: https://github.com/boelder-mws/mws-helpdesk/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/boelder-mws/mws-helpdesk/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/boelder-mws/mws-helpdesk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/boelder-mws/mws-helpdesk/releases/tag/v0.1.0

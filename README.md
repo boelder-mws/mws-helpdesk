@@ -19,6 +19,7 @@ Drizzle ORM · OpenID Connect sign-in · Docker Compose.
 | Email | Sent on new tickets, replies, assignment and status changes. Optional. |
 | Reports | Created vs. resolved per day, by category, by agent, median reply and fix times, share fixed within target. 7/30/90 days. |
 | Knowledge base | Markdown articles with drafts, categories and search. Agents write; everyone reads published articles. |
+| Branding | Admins set name, logo, accent colour and panel colour under Settings → Branding (live preview, light and dark). Logos that are dark on a transparent background need the "white tile" option to show on a dark menu. |
 
 ## Deploy on Debian 13 with Docker
 
