@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { db } from "@/db";
 import { attachments } from "@/db/schema";
@@ -23,6 +23,17 @@ export function checkFiles(files: File[]): string | null {
 
 export function uploadPath(storageKey: string) {
   return path.join(path.resolve(env.uploadDir), path.basename(storageKey));
+}
+
+/** Removes stored files. A file that is already gone is not an error. */
+export async function deleteStoredFiles(storageKeys: string[]) {
+  await Promise.all(
+    storageKeys.map((key) =>
+      unlink(uploadPath(key)).catch((err: NodeJS.ErrnoException) => {
+        if (err.code !== "ENOENT") console.error(`[uploads] could not remove ${key}: ${err.message}`);
+      }),
+    ),
+  );
 }
 
 export async function saveAttachments(
