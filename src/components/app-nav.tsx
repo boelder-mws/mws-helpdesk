@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, ChartColumn, Inbox, LayoutDashboard, LogOut, Menu, Plus, Settings, Ticket } from "lucide-react";
+import { BookOpen, ChartColumn, Inbox, LayoutDashboard, LogOut, Menu, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,13 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BrandMark, type BrandProps } from "@/components/brand-mark";
 import { Initials } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 
 const ICONS = { dashboard: LayoutDashboard, tickets: Inbox, kb: BookOpen, reports: ChartColumn, admin: Settings };
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
-type Props = { items: NavItem[]; orgName: string; user: { name: string; email: string; role: string } };
+type Props = { items: NavItem[]; brand: BrandProps; user: { name: string; email: string; role: string } };
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -37,23 +38,20 @@ export function SignOutForm() {
   return <form id="sign-out" action="/auth/logout" method="post" hidden />;
 }
 
-function Brand({ orgName }: { orgName: string }) {
+function Brand({ brand }: { brand: BrandProps }) {
   return (
-    <Link href="/" className="flex min-w-0 items-center gap-2.5 font-semibold text-white">
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-        <Ticket className="size-4" />
-      </span>
-      <span className="truncate">{orgName}</span>
+    <Link href="/" className="flex min-w-0 items-center">
+      <BrandMark {...brand} />
     </Link>
   );
 }
 
-export function Sidebar({ items, orgName, user }: Props) {
+export function Sidebar({ items, brand, user }: Props) {
   const pathname = usePathname();
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
       <div className="px-4 pt-5 pb-4">
-        <Brand orgName={orgName} />
+        <Brand brand={brand} />
       </div>
       <div className="px-3 pb-3">
         <Button asChild className="w-full justify-start">
@@ -75,7 +73,7 @@ export function Sidebar({ items, orgName, user }: Props) {
                 "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "hover:bg-sidebar-accent/60 hover:text-white",
+                  : "hover:bg-sidebar-accent/60 hover:text-sidebar-strong",
               )}
             >
               <Icon className="size-4 shrink-0" />
@@ -87,9 +85,9 @@ export function Sidebar({ items, orgName, user }: Props) {
       <div className="border-t border-sidebar-border p-3">
         <DropdownMenu>
           <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-md p-1.5 text-left hover:bg-sidebar-accent/60">
-            <Initials name={user.name} className="bg-sidebar-accent text-white" />
+            <Initials name={user.name} className="bg-sidebar-accent text-sidebar-strong" />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-white">{user.name}</span>
+              <span className="block truncate text-sm font-medium text-sidebar-strong">{user.name}</span>
               <span className="block truncate text-xs text-sidebar-muted">{user.role}</span>
             </span>
           </DropdownMenuTrigger>
@@ -111,11 +109,11 @@ export function Sidebar({ items, orgName, user }: Props) {
   );
 }
 
-export function MobileBar({ items, orgName, user }: Props) {
+export function MobileBar({ items, brand, user }: Props) {
   const pathname = usePathname();
   return (
     <div className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 bg-sidebar px-4 lg:hidden">
-      <Brand orgName={orgName} />
+      <Brand brand={brand} />
       <div className="flex items-center gap-1.5">
         <Button asChild size="sm">
           <Link href="/tickets/new">
@@ -125,7 +123,7 @@ export function MobileBar({ items, orgName, user }: Props) {
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="Menu"
-            className="flex size-9 items-center justify-center rounded-md text-white hover:bg-sidebar-accent"
+            className="flex size-9 items-center justify-center rounded-md text-sidebar-strong hover:bg-sidebar-accent"
           >
             <Menu className="size-5" />
           </DropdownMenuTrigger>

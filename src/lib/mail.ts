@@ -1,5 +1,6 @@
 import "server-only";
 import nodemailer, { type Transporter } from "nodemailer";
+import { getBranding } from "./branding";
 import { env } from "./env";
 
 let transporter: Transporter | null = null;
@@ -55,6 +56,7 @@ export type Mail = {
 export async function sendMail(mail: Mail) {
   if (!mailConfigured()) return;
   const recipients = [...new Set(mail.to.map((a) => a.toLowerCase()))];
+  const brand = await getBranding();
   const text = [
     mail.heading,
     "",
@@ -63,15 +65,15 @@ export async function sendMail(mail: Mail) {
     "",
     `${mail.link.label}: ${mail.link.href}`,
     "",
-    `— ${env.orgName}`,
+    `— ${brand.name}`,
   ].join("\n");
   const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f3f5f7;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#17222b">
 <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dde3e8;border-radius:8px"><tr><td style="padding:28px">
-<p style="margin:0 0 4px;font-size:13px;color:#5a6772">${esc(env.orgName)}</p>
+<p style="margin:0 0 4px;font-size:13px;color:#5a6772">${esc(brand.name)}</p>
 <h1 style="margin:0 0 16px;font-size:18px;line-height:1.35">${esc(mail.heading)}</h1>
 ${mail.lines.map((l) => `<p style="margin:0 0 10px;font-size:14px;line-height:1.55">${esc(l)}</p>`).join("")}
-${mail.quote ? `<div style="margin:14px 0;padding:12px 14px;border-left:3px solid #0b5a6b;background:#f3f5f7;font-size:14px;line-height:1.55;white-space:pre-wrap">${esc(mail.quote)}</div>` : ""}
-<p style="margin:20px 0 0"><a href="${esc(mail.link.href)}" style="display:inline-block;padding:9px 16px;background:#0b5a6b;color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600">${esc(mail.link.label)}</a></p>
+${mail.quote ? `<div style="margin:14px 0;padding:12px 14px;border-left:3px solid ${brand.accent};background:#f3f5f7;font-size:14px;line-height:1.55;white-space:pre-wrap">${esc(mail.quote)}</div>` : ""}
+<p style="margin:20px 0 0"><a href="${esc(mail.link.href)}" style="display:inline-block;padding:9px 16px;background:${brand.accent};color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600">${esc(mail.link.label)}</a></p>
 </td></tr></table></body></html>`;
 
   await Promise.all(

@@ -1,11 +1,12 @@
 import { MobileBar, Sidebar, SignOutForm, type NavItem } from "@/components/app-nav";
 import { isStaff, requireUser } from "@/lib/auth/guards";
-import { env } from "@/lib/env";
+import { getBranding } from "@/lib/branding";
 import { ROLE_LABEL } from "@/lib/labels";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const staff = isStaff(user);
+  const { name, logoUrl, lightTile, showName } = await getBranding();
   const items: NavItem[] = [
     ...(staff ? [{ href: "/", label: "Dashboard", icon: "dashboard" } as const] : []),
     { href: "/tickets", label: staff ? "Tickets" : "My tickets", icon: "tickets" },
@@ -15,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ];
   const nav = {
     items,
-    orgName: env.orgName,
+    brand: { name, logoUrl, lightTile, showName },
     user: { name: user.name, email: user.email, role: ROLE_LABEL[user.role] },
   };
   return (
