@@ -191,6 +191,13 @@ git push origin main --follow-tags
 Then, on GitHub, open **Releases → Draft a new release**, choose the tag, and
 paste the changelog section as the notes.
 
+If tags can't be pushed from where you're working (for example, through
+Claude), skip the tag: run `npm version minor --no-git-tag-version`, commit,
+and push `main`. Then on GitHub choose **Releases → Draft a new release**, type
+the new tag (such as `v0.2.0`) under **Choose a tag**, select **Create new tag
+on publish** with the target set to `main`, and paste the changelog section as
+the notes. GitHub creates the tag when you publish.
+
 ## Development
 
 ```sh
