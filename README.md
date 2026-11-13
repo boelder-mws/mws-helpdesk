@@ -46,7 +46,7 @@ Drizzle ORM · OpenID Connect sign-in · Docker Compose.
    # With built-in HTTPS (Caddy gets a Let's Encrypt certificate for HELPDESK_DOMAIN):
    docker compose --profile tls up -d --build
 
-   # Or without, if you already run a reverse proxy (app listens on 127.0.0.1:3000):
+   # Or without, if a reverse proxy handles HTTPS (see "Behind a reverse proxy" below):
    docker compose up -d --build
    ```
 
@@ -75,9 +75,26 @@ Any standards-compliant OpenID Connect provider works (authorization code
 flow with PKCE). To set roles from directory groups instead of by hand, see
 `OIDC_GROUPS_CLAIM` in `.env.example`.
 
-### Using your own reverse proxy
+### Behind a reverse proxy
 
-Proxy to `127.0.0.1:3000` and pass the original host through, e.g. nginx:
+Leave out `--profile tls`. Set `APP_URL` to the public https address. If the
+proxy runs on this server, forward to `127.0.0.1:3000`. If it runs on another
+machine, set `APP_BIND` in `.env` to this server's internal IP address and
+forward to `<that IP>:3000`.
+
+Docker publishes ports around `ufw`, so a `ufw` rule alone will not keep other
+machines off port 3000. Binding to the internal IP (not `0.0.0.0`) is the
+simplest safeguard; restrict it further with the `DOCKER-USER` firewall chain
+if you need to.
+
+**Nginx Proxy Manager:** add a Proxy Host with the public domain name, scheme
+`http`, forward host `<APP_BIND address>`, port `3000`. Turn on **Block Common
+Exploits**. On the **SSL** tab request a certificate and turn on **Force SSL**
+and **HTTP/2**. Websockets are not needed. If attachments fail with a
+"413 Request Entity Too Large" error, add `client_max_body_size 60m;` on the
+**Advanced** tab.
+
+For other proxies, pass the original host through, e.g. nginx:
 
 ```nginx
 location / {

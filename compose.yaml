@@ -33,8 +33,10 @@ services:
     volumes:
       - uploads:/data/uploads
     ports:
-      # Local only. Put a reverse proxy in front (the tls profile, or your own).
-      - "127.0.0.1:${APP_PORT:-3000}:3000"
+      # Local only by default. If a reverse proxy on another machine (e.g.
+      # Nginx Proxy Manager) forwards to this server, set APP_BIND in .env to
+      # this server's internal IP address.
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
 
   caddy:
     profiles: ["tls"]
