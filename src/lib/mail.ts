@@ -14,8 +14,27 @@ function transport() {
     port: env.smtpPort,
     secure: env.smtpSecure,
     auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPassword } : undefined,
+    // Fail in seconds, not minutes, when the mail server can't be reached.
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 30_000,
   });
   return transporter;
+}
+
+/** Logged once at start-up so a mail problem shows in the logs straight away. */
+export async function verifyMail() {
+  if (!mailConfigured()) {
+    console.log("[mail] SMTP_HOST is empty: email notifications are off");
+    return;
+  }
+  const where = `${env.smtpHost}:${env.smtpPort}${env.smtpSecure ? " (TLS)" : ""}`;
+  try {
+    await transport().verify();
+    console.log(`[mail] connected to ${where}${env.smtpUser ? ` as ${env.smtpUser}` : " without sign-in"}`);
+  } catch (err) {
+    console.error(`[mail] cannot use ${where}: ${(err as Error).message}`);
+  }
 }
 
 const esc = (s: string) =>
@@ -59,7 +78,8 @@ ${mail.quote ? `<div style="margin:14px 0;padding:12px 14px;border-left:3px soli
     recipients.map((to) =>
       transport()
         .sendMail({ from: env.mailFrom, to, subject: mail.subject, text, html })
-        .catch((err) => console.error(`[mail] could not send "${mail.subject}" to ${to}:`, err.message)),
+        .then(() => console.log(`[mail] sent "${mail.subject}" to ${to}`))
+        .catch((err) => console.error(`[mail] could not send "${mail.subject}" to ${to}: ${err.message}`)),
     ),
   );
 }

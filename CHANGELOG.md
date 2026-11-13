@@ -6,6 +6,9 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Email: the connection to the mail server is checked at start-up and the result is logged; each message sent is logged; connection attempts give up after 15 seconds.
+
 ## [0.1.0] - 2026-11-13
 
 First release.
