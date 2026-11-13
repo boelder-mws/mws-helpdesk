@@ -5,6 +5,7 @@ import { ArrowLeft, CircleCheck, Lock, Paperclip } from "lucide-react";
 import { markResolved } from "../actions";
 import { PriorityLabel, SlaChip, StatusBadge } from "@/components/badges";
 import { Initials } from "@/components/page-header";
+import { DeleteTicket } from "@/components/tickets/delete-ticket";
 import { ReplyForm } from "@/components/tickets/reply-form";
 import { TicketProperties } from "@/components/tickets/ticket-properties";
 import { Badge } from "@/components/ui/badge";
@@ -252,6 +253,7 @@ export default async function TicketPage({ params }: Props) {
               )}
             </CardContent>
           </Card>
+          {user.role === "admin" && <DeleteTicket ticketId={ticket.id} number={ticket.number} />}
         </aside>
       </div>
     </>

@@ -13,7 +13,7 @@ Drizzle ORM · OpenID Connect sign-in · Docker Compose.
 | Area | What it does |
 |---|---|
 | Tickets | Subject, description, category, priority, file attachments (5 × 10 MB). Public replies and agent-only internal notes. Full history of status, priority, assignee, team and category changes. |
-| Roles | **Requester** (own tickets only), **agent** (all tickets, knowledge base, reports), **admin** (plus Settings). |
+| Roles | **Requester** (own tickets only), **agent** (all tickets, knowledge base, reports), **admin** (plus Settings and permanently deleting tickets). |
 | Queue | Views for all open, assigned to me, unassigned, my teams, overdue. Filter by status, priority, category, assignee; search; sort by due date. |
 | Targets (SLA) | First-reply and fix targets per priority, counted in business hours. Tickets show time left, overdue, met or missed. |
 | Email | Sent on new tickets, replies, assignment and status changes. Optional. |

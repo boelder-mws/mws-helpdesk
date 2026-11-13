@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  attachments,
   categories,
   comments,
   teams,
@@ -20,7 +21,7 @@ import { isStaff, requireUser } from "@/lib/auth/guards";
 import { isPriority, isStatus, PRIORITY_LABEL, STATUS_LABEL } from "@/lib/labels";
 import { notifyAssigned, notifyReply, notifyStatusChanged, notifyTicketCreated } from "@/lib/notify";
 import { slaDueDates } from "@/lib/sla-server";
-import { checkFiles, filesFrom, saveAttachments } from "@/lib/uploads";
+import { checkFiles, deleteStoredFiles, filesFrom, saveAttachments } from "@/lib/uploads";
 
 export type FormState = { error?: string; values?: Record<string, string> } | undefined;
 
@@ -235,4 +236,29 @@ export async function markResolved(form: FormData) {
   await logEvent(ticket.id, user, "status", STATUS_LABEL[ticket.status], STATUS_LABEL.resolved);
   after(() => notifyStatusChanged(ticket, user, "resolved"));
   revalidatePath(`/tickets/${ticket.number}`);
+}
+
+/** Admin: permanently remove a ticket, its replies, history and attachment files. */
+export async function deleteTicket(form: FormData) {
+  const user = await requireUser();
+  if (user.role !== "admin") return; // the button is only shown to admins; this is the real check
+
+  const id = text(form, "ticketId");
+  if (!isUuid(id)) return;
+  const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+  if (!ticket) redirect("/tickets");
+
+  const files = await db
+    .select({ storageKey: attachments.storageKey })
+    .from(attachments)
+    .where(eq(attachments.ticketId, id));
+
+  // Replies, history and attachment records go with the ticket (cascading deletes).
+  await db.delete(tickets).where(eq(tickets.id, id));
+  // Files last: if this step fails, nothing in the app points at a missing file.
+  await deleteStoredFiles(files.map((f) => f.storageKey));
+
+  console.log(`[audit] ticket #${ticket.number} "${ticket.subject}" deleted by ${user.email}`);
+  revalidatePath("/", "layout");
+  redirect("/tickets");
 }
