@@ -6,6 +6,9 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- New ticket form: the "How much is this affecting you?" field no longer runs outside the form. Category and priority are now full width, and long dropdown text is shortened on narrow screens instead of widening the page.
+
 ## [0.2.0] - 2026-11-13
 
 ### Added

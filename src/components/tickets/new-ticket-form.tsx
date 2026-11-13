@@ -29,7 +29,7 @@ export function NewTicketForm({
   const v = state?.values ?? {};
 
   return (
-    <form action={action} className="grid gap-5">
+    <form action={action} className="grid grid-cols-1 gap-5">
       {state?.error && (
         <p role="alert" className="flex gap-2 rounded-md bg-danger-bg px-3 py-2.5 text-sm text-danger">
           <CircleAlert className="mt-0.5 size-4 shrink-0" />
@@ -61,8 +61,8 @@ export function NewTicketForm({
         />
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="grid gap-2">
+      <div className="grid min-w-0 grid-cols-1 gap-5">
+        <div className="grid min-w-0 gap-2">
           <Label htmlFor="categoryId">Category</Label>
           <Select name="categoryId" defaultValue={v.categoryId || undefined}>
             <SelectTrigger id="categoryId">
@@ -77,7 +77,7 @@ export function NewTicketForm({
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-2">
           <Label htmlFor="priority">How much is this affecting you?</Label>
           <Select name="priority" defaultValue={v.priority || "normal"}>
             <SelectTrigger id="priority">
