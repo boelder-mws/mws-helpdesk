@@ -6,6 +6,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Security automation: Dependabot for npm packages, Docker images and GitHub Actions; a CI workflow (type check, lint, build, `npm audit`, Docker build and start-up check, Trivy image scan) that also runs daily; an optional CodeQL workflow; `SECURITY.md`.
+- `scripts/update.sh` pulls fresh base images, rebuilds and restarts the stack, and waits for it to be healthy. The README describes a weekly cron job for it, and host patching with `unattended-upgrades`.
+
+### Changed
+- The app container now runs with a read-only filesystem, no Linux capabilities and `no-new-privileges`. Its image installs pending OS security updates when built and no longer includes npm.
+
 ## [0.2.1] - 2026-11-13
 
 ### Fixed
