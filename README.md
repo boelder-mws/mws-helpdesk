@@ -111,8 +111,8 @@ location / {
 ## Day-to-day operations
 
 ```sh
-# Update to a new version
-git pull && docker compose --profile tls up -d --build
+# Update to a new version (see Security and updates for the weekly routine)
+scripts/update.sh --code
 
 # Back up the database
 docker compose exec -T db pg_dump -U helpdesk helpdesk | gzip > helpdesk-$(date +%F).sql.gz
@@ -128,6 +128,67 @@ gunzip -c helpdesk-2026-01-01.sql.gz | docker compose exec -T db psql -U helpdes
 Data lives in two Docker volumes: `db-data` (PostgreSQL) and `uploads`
 (attachments). `docker compose down` keeps them; `down -v` deletes them.
 The volume name prefix (`mws-helpdesk_`) is the folder name of the checkout.
+
+## Security and updates
+
+A vulnerability fix only helps once it reaches the running server. Three
+things have to happen, and they are separate:
+
+| What | Who does it | How |
+|---|---|---|
+| **The app's own packages** (npm) | GitHub | Dependabot opens a pull request when a package has a newer version, and straight away for security fixes. CI builds and tests each one. You review and merge. |
+| **The container** (Node, Debian, PostgreSQL) | The server | `scripts/update.sh` pulls fresh base images and rebuilds. Run it weekly. |
+| **The server itself** (Debian, Docker) | The server | `unattended-upgrades`, below. |
+
+CI (`.github/workflows/ci.yml`) runs on every pull request and every day:
+type check, lint, build, `npm audit` on production dependencies, a real
+Docker build, a start-up check, and a Trivy scan of the image. A scheduled
+run that fails means a fix exists for something we ship: look at the log,
+then update. It also scans the `postgres` and `caddy` images.
+
+**Weekly rebuild on the server.** The script rebuilds from the code that is
+checked out, so an unattended run brings in operating-system, Node and
+PostgreSQL patches without deploying new app code. Put it in cron by
+creating `/etc/cron.d/helpdesk-update` with this one line:
+
+```
+30 3 * * 0 root /opt/mws-helpdesk/scripts/update.sh >> /var/log/helpdesk-update.log 2>&1
+```
+
+To deploy a new version of the app, run `scripts/update.sh --code`. It pulls,
+rebuilds, restarts, and waits until the app reports healthy.
+
+**The host.** On Debian 13:
+
+```sh
+sudo apt install unattended-upgrades needrestart
+sudo dpkg-reconfigure -plow unattended-upgrades
+```
+
+Debian security updates are then installed automatically. If Docker was
+installed from Docker's own apt repository, add this line under
+`Allowed-Origins` in `/etc/apt/apt.conf.d/50unattended-upgrades`, or Docker
+won't update: `"origin=Docker,codename=${distro_codename},label=Docker CE";`.
+Kernel updates need a reboot now and then; `needrestart` tells you when.
+Nginx Proxy Manager runs from its own image on the other server and needs the
+same routine there.
+
+**How the container is locked down.** It runs as an unprivileged user with a
+read-only filesystem, no Linux capabilities and `no-new-privileges`. The
+only writable places are the `uploads` volume and in-memory scratch space.
+PostgreSQL has no published port, so only the app can reach it.
+
+**One-time settings in GitHub** (these can't be set from code). In the
+repository, open Settings → Code security and turn on: Dependabot alerts,
+Dependabot security updates, Private vulnerability reporting and, if your
+plan offers it, Secret scanning with push protection. Then Settings →
+Branches → add a rule for `main` that requires pull requests and the
+**Type check, lint, build, dependency audit** and **Docker image (build,
+start, scan)** checks to pass before merging. To also run CodeQL on our own
+code, create a repository variable `ENABLE_CODEQL` set to `true` (private
+repositories need GitHub Code Security for this; public ones don't).
+
+Report a vulnerability in the app as described in [SECURITY.md](SECURITY.md).
 
 ## How a few things behave
 

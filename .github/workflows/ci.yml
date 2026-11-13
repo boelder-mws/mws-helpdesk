@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Every day: new vulnerabilities are published without any change to our code.
+    - cron: "17 11 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    name: Type check, lint, build, dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+      # Fails on high or critical advisories in the packages that ship in the app.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      # Development tools never reach the container; report only.
+      - name: Audit development tools (report only)
+        run: npm audit --audit-level=high || true
+
+  docker:
+    name: Docker image (build, start, scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          pull: true
+          tags: mws-helpdesk:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start the stack and wait for it to be healthy
+        run: |
+          cat > .env <<ENV
+          POSTGRES_PASSWORD=ci-only-password
+          APP_URL=http://localhost:3000
+          ENV
+          docker compose up -d --no-build
+          for i in $(seq 1 40); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps -q app)" 2>/dev/null || echo starting)
+            echo "app health: $status"
+            [ "$status" = healthy ] && exit 0
+            sleep 3
+          done
+          docker compose logs
+          exit 1
+        env:
+          COMPOSE_PROGRESS: plain
+
+      - name: Check the container is locked down
+        run: |
+          uid=$(docker compose exec -T app id -u)
+          echo "app runs as uid $uid"
+          [ "$uid" != 0 ]
+          curl -fsS http://127.0.0.1:3000/api/health
+          # The database must not be published on the host.
+          ! docker compose port db 5432 2>/dev/null | grep -q .
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
+
+      - name: Scan the image for known vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: mws-helpdesk:ci
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          # Only fail for problems that have a fix available.
+          ignore-unfixed: true
+          exit-code: "1"
+
+  third-party-images:
+    name: Scan postgres and caddy images
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["postgres:17", "caddy:2"]
+    steps:
+      # A failure here means a newer upstream image fixes a known problem:
+      # run scripts/update.sh on the server to pull it.
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ matrix.image }}
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

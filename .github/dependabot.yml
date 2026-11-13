@@ -1,0 +1,51 @@
+# Dependabot opens pull requests when a dependency has a newer version.
+# Security fixes are opened straight away (when "Dependabot security updates"
+# is on in the repository settings); the weekly schedule below is for ordinary
+# version bumps. Every PR runs the CI workflow, so you can see whether it builds.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Chicago
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # Base images in the Dockerfile (node:22-slim).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Chicago
+    commit-message:
+      prefix: "chore(docker)"
+
+  # Images in compose.yaml (postgres, caddy).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Chicago
+    commit-message:
+      prefix: "chore(docker)"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Chicago
+    commit-message:
+      prefix: "chore(ci)"

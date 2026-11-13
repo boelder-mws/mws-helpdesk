@@ -9,3 +9,7 @@ npm-debug.log*
 Dockerfile
 compose.yaml
 README.md
+.github
+scripts
+SECURITY.md
+CHANGELOG.md
