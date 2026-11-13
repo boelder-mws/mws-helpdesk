@@ -146,6 +146,51 @@ The volume name prefix (`mws-helpdesk_`) is the folder name of the checkout.
   all agents and admins if it has no team.
 - **Sign-out** ends the helpdesk session only, not the identity provider's.
 
+## Versioning and releases
+
+Versions follow [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
+While the major number is 0 the app is pre-1.0; the plan is to release 1.0.0
+once it has been in daily use.
+
+| Bump | When | What you do when upgrading |
+|---|---|---|
+| **MAJOR** | A change that needs action from you: a renamed or removed `.env` setting, a changed deployment layout, a database change that can't be undone | Read the changelog entry first, then follow its steps |
+| **MINOR** | New features that work without any change on your side | Pull and rebuild |
+| **PATCH** | Bug fixes and security updates only | Pull and rebuild |
+
+Every release is a git tag (`v0.1.0`) and a section in `CHANGELOG.md`. The
+version appears in the account menu in the app and in `/api/health`.
+
+**Deploying a release.** Run released versions rather than whatever is on `main`:
+
+```sh
+git fetch --tags
+git checkout v0.2.0
+docker compose up -d --build
+```
+
+To follow the newest release later, `git fetch --tags` and check out the new
+tag. (`git checkout main && git pull` gets unreleased work.)
+
+**Upgrading safely.** Database changes are applied automatically at start-up
+and only move forward. There is no downgrade, so back up first (see
+*Day-to-day operations*) and, if an upgrade goes wrong, restore the backup and
+check out the previous tag.
+
+**Cutting a release** (maintainers). Add the changes under `## [Unreleased]`
+in `CHANGELOG.md` as you work. To release:
+
+```sh
+git checkout main && git pull
+# Move the Unreleased entries under a new "## [X.Y.Z] - date" heading, commit.
+npm version minor        # or patch / major: updates package.json and the lockfile,
+                         # commits "X.Y.Z" and creates the tag vX.Y.Z
+git push origin main --follow-tags
+```
+
+Then, on GitHub, open **Releases → Draft a new release**, choose the tag, and
+paste the changelog section as the notes.
+
 ## Development
 
 ```sh

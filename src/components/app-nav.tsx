@@ -100,6 +100,10 @@ export function Sidebar({ items, orgName, user }: Props) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <SignOut />
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              Version {process.env.NEXT_PUBLIC_APP_VERSION}
+            </DropdownMenuLabel>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -142,6 +146,10 @@ export function MobileBar({ items, orgName, user }: Props) {
               <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
             </DropdownMenuLabel>
             <SignOut />
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              Version {process.env.NEXT_PUBLIC_APP_VERSION}
+            </DropdownMenuLabel>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

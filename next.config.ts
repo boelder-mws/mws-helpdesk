@@ -1,4 +1,8 @@
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
+
+// Single source of truth for the app version: package.json.
+const { version } = JSON.parse(readFileSync("./package.json", "utf8")) as { version: string };
 
 const nextConfig: NextConfig = {
   // Self-contained server bundle for the Docker image (.next/standalone).
@@ -7,6 +11,7 @@ const nextConfig: NextConfig = {
   // prerender-first Cache Components model is switched off.
   cacheComponents: false,
   poweredByHeader: false,
+  env: { NEXT_PUBLIC_APP_VERSION: version },
   serverExternalPackages: ["pg", "nodemailer"],
   experimental: {
     serverActions: {
